@@ -4,6 +4,7 @@ Intel Fusion DSS - Main Streamlit Application
 An AI-powered intelligence fusion and decision support system
 for analyzing unstructured documents.
 """
+from ui.geomap import create_geo_map
 import streamlit as st
 from datetime import datetime
 
@@ -122,38 +123,35 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.header("📤 Document Upload")
-        
+        st.markdown("## 🧠 Intel Fusion")
+        st.caption("AI Decision Support System")
+
+        st.markdown("---")
+
         uploaded_files = st.file_uploader(
-            "Upload PDF documents",
+            "📄 Upload PDF documents",
             type=["pdf"],
-            accept_multiple_files=True,
-            help="Upload one or more PDF documents for analysis"
+            accept_multiple_files=True
         )
-        
+
         if uploaded_files:
             if st.button("🚀 Process Documents", type="primary", use_container_width=True):
                 process_documents(uploaded_files, state)
-        
-        st.divider()
-        
-        # State info
+
+        st.markdown("---")
+
         if state.has_data:
-            st.success(f"✅ {state.document_count} document(s) loaded")
-            st.caption(f"Last updated: {state.last_updated.strftime('%H:%M:%S') if state.last_updated else 'N/A'}")
-            
-            if st.button("🗑️ Clear All Data", use_container_width=True):
+            st.success(f"{state.document_count} document(s) loaded")
+
+            if st.button("🗑️ Clear Data", use_container_width=True):
                 reset_state()
                 st.rerun()
-        else:
-            st.info("📄 Upload documents to begin analysis")
-        
-        st.divider()
-        
-        # Document list
+
+        st.markdown("---")
+
         if state.documents:
             render_document_list(state.documents)
-    
+        
     # Main content
     if not state.has_data:
         render_welcome_screen()
@@ -254,17 +252,24 @@ def render_welcome_screen():
 def render_analysis_dashboard(state):
     """Render the main analysis dashboard."""
     
-    # Metrics row
-    metrics = state.to_summary()
-    render_metric_cards(metrics)
+    # # Metrics row
+    # metrics = state.to_summary()
+    # render_metric_cards(metrics)
     
     st.divider()
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric("Entities", len(state.graph.graph.nodes))
+    col2.metric("Relationships", len(state.graph.graph.edges))
+    col3.metric("Documents", state.document_count)
+    col4.metric("Events", len(state.timeline.entries))
     
     # Main tabs
-    tab_network, tab_timeline, tab_insights, tab_explore = st.tabs([
-        "🕸️ Network Graph",
+    tab_network, tab_timeline, tab_map, tab_insights, tab_explore = st.tabs([
+        "🌐 Network",
         "📅 Timeline",
-        "💡 Insights",
+        "🗺 Geo Map",
+        "🔍 Insights",
         "🔎 Explorer"
     ])
     
@@ -277,9 +282,33 @@ def render_analysis_dashboard(state):
     with tab_insights:
         render_insights_tab(state)
     
+    with tab_map:
+        render_map_tab(state)
+    
     with tab_explore:
         render_explorer_tab(state)
 
+def render_map_tab(state):
+    """Render geo map tab."""
+
+    st.subheader("🗺 Geographical Intelligence")
+
+    locations = []
+
+    for extraction in state.extractions:
+        for ent in extraction.entities:
+            if ent.label in ["GPE", "LOC"]:
+                locations.append(ent.text)
+
+    if locations:
+        fig = create_geo_map(locations)
+
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Could not generate map from extracted locations.")
+    else:
+        st.info("No location data found.")
 
 def render_network_tab(state):
     """Render the network visualization tab."""
