@@ -8,6 +8,9 @@ from typing import List, Optional
 from datetime import datetime
 import hashlib
 
+from docx import Document as DocxDocument
+import pandas as pd
+from bs4 import BeautifulSoup
 
 @dataclass
 class Page:
@@ -128,8 +131,92 @@ class PDFExtractor:
             return {}
 
 
-# Convenience function
-def extract_pdf(file_bytes: bytes, filename: str) -> Document:
-    """Extract text from a PDF file."""
-    extractor = PDFExtractor()
+
+class MultiFormatExtractor:
+    """
+    Handles multiple document formats and routes to appropriate extractor.
+    """
+    
+    def __init__(self):
+        self.pdf_extractor = PDFExtractor()
+        self.supported_extensions = {
+            '.pdf', '.docx', '.txt', '.csv', '.xlsx', '.html'
+        }
+
+    def extract(self, file_bytes: bytes, filename: str) -> Document:
+        ext = '.' + filename.split('.')[-1].lower()
+
+        if ext == '.pdf':
+            return self.pdf_extractor.extract(file_bytes, filename)
+
+        elif ext == '.docx':
+            return self._extract_docx(file_bytes, filename)
+
+        elif ext == '.txt':
+            return self._extract_txt(file_bytes, filename)
+
+        elif ext == '.csv':
+            return self._extract_csv(file_bytes, filename)
+
+        elif ext == '.xlsx':
+            return self._extract_excel(file_bytes, filename)
+
+        elif ext == '.html':
+            return self._extract_html(file_bytes, filename)
+
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
+        
+
+    def _create_document(self, text: str, filename: str, file_bytes: bytes) -> Document:
+        doc_id = hashlib.md5(file_bytes).hexdigest()[:12]
+
+        pages = [
+            Page(
+                number=1,
+                text=text,
+                word_count=len(text.split())
+            )
+        ]
+
+        return Document(
+            id=doc_id,
+            filename=filename,
+            pages=pages,
+            full_text=text,
+            total_pages=1,
+            total_words=len(text.split()),
+            extracted_at=datetime.now(),
+            metadata={}
+        )
+    def _extract_docx(self, file_bytes, filename):
+        from io import BytesIO
+        doc = DocxDocument(BytesIO(file_bytes))
+        text = "\n".join([p.text for p in doc.paragraphs])
+        return self._create_document(text, filename, file_bytes)
+
+    def _extract_txt(self, file_bytes, filename):
+        text = file_bytes.decode("utf-8", errors="ignore")
+        return self._create_document(text, filename, file_bytes)
+
+    def _extract_csv(self, file_bytes, filename):
+        from io import BytesIO
+        df = pd.read_csv(BytesIO(file_bytes))
+        text = df.to_string()
+        return self._create_document(text, filename, file_bytes)
+    
+    def _extract_excel(self, file_bytes, filename):
+        from io import BytesIO
+        df = pd.read_excel(BytesIO(file_bytes))
+        text = df.to_string()
+        return self._create_document(text, filename, file_bytes)
+    def _extract_html(self, file_bytes, filename):
+        soup = BeautifulSoup(file_bytes, "html.parser")
+        text = soup.get_text()
+        return self._create_document(text, filename, file_bytes)
+
+
+    
+def extract_document(file_bytes: bytes, filename: str) -> Document:
+    extractor = MultiFormatExtractor()
     return extractor.extract(file_bytes, filename)

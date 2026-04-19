@@ -9,7 +9,7 @@ import streamlit as st
 from datetime import datetime
 
 # Import core modules
-from core.extractor import extract_pdf
+from core.extractor import extract_document
 from core.nlp_pipeline import NLPPipeline
 from core.pattern_detector import PatternDetector
 from core.risk_scorer import RiskScorer
@@ -129,8 +129,8 @@ def main():
         st.markdown("---")
 
         uploaded_files = st.file_uploader(
-            "📄 Upload PDF documents",
-            type=["pdf"],
+            "📄 Upload documents",
+            type=["pdf", "docx", "txt", "csv", "xlsx", "html"],
             accept_multiple_files=True
         )
 
@@ -171,12 +171,19 @@ def process_documents(uploaded_files, state):
     total_files = len(uploaded_files)
     
     for idx, file in enumerate(uploaded_files):
+
+        ext = file.name.split('.')[-1].lower()
+
+        if ext not in ["pdf","docx","txt","csv","xlsx","html"]:
+            st.warning(f"Unsupported file: {file.name}")
+            continue
+
         status.write(f"📄 Processing: {file.name}")
         
         try:
             # Extract text
             status.write("  ├─ Extracting text...")
-            doc = extract_pdf(file.read(), file.name)
+            doc = extract_document(file.read(), file.name)
             
             # NLP processing
             status.write("  ├─ Extracting entities and relationships...")
