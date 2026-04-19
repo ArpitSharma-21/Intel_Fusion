@@ -10,7 +10,12 @@ from datetime import datetime
 import re
 
 from config import nlp_config
+import spacy
 
+try:
+    self.nlp = spacy.load("en_core_web_sm")
+except:
+    self.nlp = spacy.blank("en")
 
 @dataclass
 class Entity:
