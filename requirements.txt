@@ -1,7 +1,10 @@
-streamlit>=1.28.0
-pymupdf>=1.23.0
-spacy>=3.7.0
-networkx>=3.2
-plotly>=5.18.0
-pandas>=2.1.0
-python-dateutil>=2.8.0
+streamlit
+geopy
+pandas
+numpy
+plotly
+python-docx
+beautifulsoup4
+PyPDF2
+pymupdf
+openpyxl
