@@ -1,7 +1,8 @@
 streamlit
-spacy
+spacy==3.7.2
 geopy
 pandas
+numpy
 plotly
 python-docx
 beautifulsoup4
