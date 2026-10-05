@@ -12,3 +12,4 @@ PyPDF2
 pymupdf
 openpyxl
 networkx
+scipy
