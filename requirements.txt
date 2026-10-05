@@ -11,3 +11,4 @@ beautifulsoup4
 PyPDF2
 pymupdf
 openpyxl
+networkx
